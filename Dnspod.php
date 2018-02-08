@@ -182,5 +182,5 @@ class Dnspod
     }
 }
 
-$ddns = new Dnspod('', 'jay4497.cn', 'nas');
+$ddns = new Dnspod('', 'you_domin', 'your_sub_domain');
 $ddns->set_record();

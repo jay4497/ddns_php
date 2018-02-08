@@ -54,8 +54,7 @@ class Dnspod
             'length' => 1,
             'keyword' => ''
         ];
-        $send_data = array_merge($this->public_params, $params);
-        $result = $this->request($url, $send_data, 'post');
+        $result = $this->request($url, $params, 'post');
         if (!empty($result)) {
             if ($result->status->code == 1) {
                 $this->domain_info = $result->domain;
@@ -90,9 +89,10 @@ class Dnspod
             if (!empty($result)) {
                 if ($result->status->code == 1) {
                     $success_message = 'The value of record changes to ' . $this->my_ip . ' form ' . $this->record_info->value;
-                    $this->log($this->status->message);
+                    $this->log($success_message);
+                    $this->log($result->status->message);
                 } else {
-                    $this->log($this->status->message);
+                    $this->log($result->status->message);
                 }
             } else {
                 $this->log('Request error.');
@@ -112,16 +112,6 @@ class Dnspod
         return false;
     }
 
-    public function set_domain($domain)
-    {
-        $this->domain = $domain;
-    }
-
-    public function get_domain()
-    {
-        return $this->domain;
-    }
-
     private function build_params($data = [])
     {
         $public_params = [
@@ -139,7 +129,8 @@ class Dnspod
     private function get_ip()
     {
         $url = 'http://ip-api.com/json';
-        $result = $this->request($url, [], 'get');
+        $result = file_get_contents($url);
+        $result = json_decode($result);
         if ($result->status == 'success') {
             $this->my_ip = $result->query;
         }
@@ -150,6 +141,7 @@ class Dnspod
     {
         $_data = $this->build_params($data);
         $send_data = http_build_query($_data);
+        $url = $this->base_url. $url;
         $res = curl_init();
         if (strtolower($method) == 'get') {
             $url = $url . '?' . $send_data;
@@ -157,20 +149,20 @@ class Dnspod
         } else {
             curl_setopt($res, CURLOPT_URL, $url);
             curl_setopt($res, CURLOPT_POST, 1);
-            curl_setopt($res, CURLOPT_POSTFIELDS, $data);
+            curl_setopt($res, CURLOPT_POSTFIELDS, $send_data);
         }
+        curl_setopt($res, CURLOPT_USERAGENT, 'Jay4497 DDNS Client/1.0.0 (jay4497@126.com)');
         curl_setopt($res, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($res, CURLOPT_SSL_VERIFYHOST, false);
         curl_setopt($res, CURLOPT_RETURNTRANSFER, 1);
         $result = curl_exec($res);
         curl_close($res);
-        $this->log('Request result: ' . $result);
         return json_decode($result);
     }
 
     private function log($message)
     {
-        $log_dir = '/var/log/ddns_php.log';
+        $log_dir = './logs/ddns_php.log';
         if (is_file($log_dir)) {
             if (filesize($log_dir) > 5120000) {
                 @unlink($log_dir);
@@ -182,5 +174,5 @@ class Dnspod
     }
 }
 
-$ddns = new Dnspod('', 'you_domin', 'your_sub_domain');
+$ddns = new Dnspod('your login_token', 'your domain', 'your sub_domain');
 $ddns->set_record();

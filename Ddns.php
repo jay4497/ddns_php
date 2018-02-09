@@ -6,10 +6,8 @@
  * by jay4497
  */
 
-class Dnspod
+class Ddns
 {
-    private $public_params;
-
     protected $base_url = 'https://dnsapi.cn';
 
     private $domain;
@@ -28,20 +26,15 @@ class Dnspod
 
     private $my_ip;
 
-    public function __construct($login_token, $domain, $sub_domain = '', $format = 'json', $lang = 'cn')
+    public function __construct($login_token, $domain, $sub_domain = '', $lang = 'cn', $format = 'json')
     {
-        $params = [
-            'login_token' => '',
-            'format' => 'json',
-            'lang' => 'cn',
-            'error_on_empty' => 'no'
-        ];
         $this->login_token = $login_token;
         $this->domain = $domain;
         $this->sub_domain = $sub_domain;
         $this->format = $format;
         $this->lang = $lang;
-        $this->public_params = $params;
+
+        $this->log('DDNS begin.');
     }
 
     public function get_record()
@@ -61,7 +54,7 @@ class Dnspod
                 $this->record_info = $result->records[0];
                 return true;
             } else {
-                $this->log($this->status->message);
+                $this->log($result->status->message);
                 exit;
             }
         } else {
@@ -88,7 +81,7 @@ class Dnspod
             $result = $this->request($url, $params, 'post');
             if (!empty($result)) {
                 if ($result->status->code == 1) {
-                    $success_message = 'The value of record changes to ' . $this->my_ip . ' form ' . $this->record_info->value;
+                    $success_message = 'The value of record changes to ' . $this->my_ip . ' from ' . $this->record_info->value;
                     $this->log($success_message);
                     $this->log($result->status->message);
                 } else {
@@ -98,6 +91,8 @@ class Dnspod
                 $this->log('Request error.');
             }
         }
+
+        $this->log('DDNS complete.');
     }
 
     public function check_ip()
@@ -173,6 +168,3 @@ class Dnspod
         file_put_contents($log_dir, $content, FILE_APPEND);
     }
 }
-
-$ddns = new Dnspod('your login_token', 'your domain', 'your sub_domain');
-$ddns->set_record();

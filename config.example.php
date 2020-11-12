@@ -8,4 +8,5 @@ $config = [
     'domain' => 'jay4497.cn',  // your domain name
     'sub_domain' => 'www',  // your sub_domain name
     'lang' => 'cn', // cn or en
+    'ip_type' => 'ipv4',  // ipv4 or ipv6
 ];

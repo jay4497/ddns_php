@@ -26,13 +26,21 @@ class Ddns
 
     private $my_ip;
 
-    public function __construct($login_token, $domain, $sub_domain = '', $lang = 'cn', $format = 'json')
+    private $ip_type;
+
+    private $record_type = 'A';
+
+    public function __construct($login_token, $domain, $sub_domain = '', $lang = 'cn', $format = 'json', $ip_type = 'ipv4')
     {
         $this->login_token = $login_token;
         $this->domain = $domain;
         $this->sub_domain = $sub_domain;
         $this->format = $format;
         $this->lang = $lang;
+        $this->ip_type = $ip_type;
+        if ($ip_type === 'ipv6') {
+            $this->record_type = 'AAAA';
+        }
 
         $this->log('DDNS begin.');
     }
@@ -72,10 +80,10 @@ class Ddns
                 'domain' => $this->domain,
                 'record_id' => $this->record_info->id,
                 'sub_domain' => $this->sub_domain ?: '@',
-                'record_type' => 'A',
+                'record_type' => $this->record_type,
                 'record_line' => '默认',
                 'value' => $this->my_ip,
-                'ttl' => '10'
+                'ttl' => '600'
             ];
 
             $result = $this->request($url, $params, 'post');
@@ -123,13 +131,24 @@ class Ddns
 
     private function get_ip()
     {
-        $url = 'http://ip-api.com/json';
-        $result = file_get_contents($url);
-        $result = json_decode($result);
-        if ($result->status == 'success') {
-            $this->my_ip = $result->query;
+        $url = 'https://api-ipv4.ip.sb/ip';
+        if ($this->ip_type === 'ipv6') {
+            $url = 'https://api-ipv6.ip.sb/ip';
         }
-        return $this->my_ip;
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => false,
+            CURLOPT_RETURNTRANSFER => true
+        ]);
+        $result = curl_exec($ch);
+        $curl_err = curl_errno($ch);
+        if($curl_err) {
+            $this->log('get ip error: '. curl_error($ch). '('. $curl_err. ')');
+            exit;
+        }
+        curl_close($ch);
+        return $result;
     }
 
     private function request($url, $data, $method = 'post')
@@ -146,11 +165,15 @@ class Ddns
             curl_setopt($res, CURLOPT_POST, 1);
             curl_setopt($res, CURLOPT_POSTFIELDS, $send_data);
         }
-        curl_setopt($res, CURLOPT_USERAGENT, 'Jay4497 DDNS Client/1.0.0 (jay4497@126.com)');
         curl_setopt($res, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($res, CURLOPT_SSL_VERIFYHOST, false);
         curl_setopt($res, CURLOPT_RETURNTRANSFER, 1);
         $result = curl_exec($res);
+        $curl_err = curl_errno($res);
+        if($curl_err) {
+            $this->log('curl error: '. curl_error($res). '('. $curl_err. ') '. $url);
+            exit;
+        }
         curl_close($res);
         return json_decode($result);
     }
@@ -165,6 +188,6 @@ class Ddns
         }
         $pre_content = date('Y-m-d H:i:s', time()) . ' - ';
         $content = $pre_content . $message . PHP_EOL;
-        file_put_contents($log_dir, $content, FILE_APPEND);
+        @file_put_contents($log_dir, $content, FILE_APPEND);
     }
 }

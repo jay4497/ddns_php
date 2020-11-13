@@ -180,7 +180,7 @@ class Ddns
 
     private function log($message)
     {
-        $log_dir = './logs/ddns_php.log';
+        $log_dir = rtrim(ROOT, DIRECTORY_SEPARATOR). DIRECTORY_SEPARATOR. 'logs'. DIRECTORY_SEPARATOR.'ddns_php.log';
         if (is_file($log_dir)) {
             if (filesize($log_dir) > 5120000) {
                 @unlink($log_dir);

@@ -69,7 +69,6 @@ class Ddns
             $this->log('Request error.');
             exit;
         }
-        return false;
     }
 
     public function set_record()
@@ -109,6 +108,7 @@ class Ddns
         if($this->get_record()) {
             $record_ip = $this->record_info->value ?: $cur_ip;
             if ($cur_ip != $record_ip) {
+                $this->my_ip = $record_ip;
                 return true;
             }
         }

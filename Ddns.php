@@ -108,7 +108,7 @@ class Ddns
         if($this->get_record()) {
             $record_ip = $this->record_info->value ?: $cur_ip;
             if ($cur_ip != $record_ip) {
-                $this->my_ip = $record_ip;
+                $this->my_ip = $cur_ip;
                 return true;
             }
         }
@@ -148,7 +148,7 @@ class Ddns
             exit;
         }
         curl_close($ch);
-        return $result;
+        return trim($result);
     }
 
     private function request($url, $data, $method = 'post')
